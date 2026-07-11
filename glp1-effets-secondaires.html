@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>GLP-1 — Gérer les effets secondaires</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1F3EF; --panel:#FFFFFF; --ink:#10241F; --ink-soft:#4B5C56; --line:#D8DED7;
+    --teal:#0C8B44; --teal-deep:#075E2E; --amber:#B8842A; --rust:#A63D2F; --sage:#1FA35C;
+    --mono:'IBM Plex Mono',monospace; --serif:'Spectral',serif; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); padding-bottom:40px; -webkit-font-smoothing:antialiased;}
+  header{padding:26px 18px 20px; border-bottom:2px solid var(--ink); background:var(--panel);}
+  header .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--teal); margin-bottom:6px;}
+  header h1{font-family:var(--serif); font-weight:700; font-size:24px; margin:0 0 4px; line-height:1.15;}
+  header p{margin:0; font-size:13.5px; color:var(--ink-soft); line-height:1.5;}
+  main{max-width:720px; margin:0 auto; padding:0 12px;}
+
+  .section-title{font-family:var(--serif); font-weight:600; font-size:15px; margin:20px 2px 10px;}
+
+  .symptom-grid{display:flex; flex-wrap:wrap; gap:8px;}
+  .symptom-chip{
+    display:flex; align-items:center; gap:7px; padding:10px 13px; border:1.5px solid var(--line);
+    border-radius:20px; background:var(--panel); cursor:pointer; font-size:13px; font-weight:600;
+    user-select:none; transition:background .12s, border-color .12s;
+  }
+  .symptom-chip .dot{width:9px; height:9px; border-radius:50%; background:var(--line); flex:none;}
+  .symptom-chip.checked{background:#E9F6EE; border-color:var(--teal); color:var(--teal-deep);}
+  .symptom-chip.checked .dot{background:var(--teal);}
+
+  .detail-card{
+    background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--teal);
+    border-radius:8px; padding:16px 16px 14px; margin-top:14px;
+  }
+  .detail-card h3{font-family:var(--serif); font-size:17px; font-weight:700; margin:0 0 10px;}
+  .detail-card h4{
+    font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--teal-deep); margin:14px 0 6px;
+  }
+  .detail-card ul{margin:0; padding-left:19px;}
+  .detail-card li{font-size:13.5px; line-height:1.55; margin-bottom:5px;}
+  .redflag-box{
+    background:#FBEAE7; border-left:3px solid var(--rust); border-radius:6px; padding:10px 12px; margin-top:10px;
+  }
+  .redflag-box h4{color:var(--rust); margin-top:0;}
+  .redflag-box li{color:#5A2A22;}
+
+  .empty-msg{
+    text-align:center; color:var(--ink-soft); font-size:13.5px; padding:30px 10px; font-style:italic;
+  }
+
+  .foot-note{
+    font-size:11.5px; color:var(--ink-soft); line-height:1.5; padding:20px 4px 10px;
+    border-top:1px dashed var(--line); margin-top:24px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Suivi personnel — non médical</div>
+  <h1>Effets secondaires sous GLP-1</h1>
+  <p>Coche ce que tu ressens en ce moment : tu obtiens des pistes concrètes pour chaque symptôme, et les signes qui doivent t'amener à consulter.</p>
+</header>
+
+<main>
+  <div class="section-title">Que ressens-tu ?</div>
+  <div class="symptom-grid" id="symptom-grid"></div>
+
+  <div id="details-container"></div>
+
+  <div class="foot-note">
+    Ces conseils sont des repères généraux d'accompagnement au quotidien, pas un avis médical individualisé. En cas de doute, de symptôme sévère, ou de persistance malgré ces mesures, contacte ton médecin ou ton pharmacien — c'est lui qui peut ajuster la dose ou le traitement si besoin.
+  </div>
+</main>
+
+<script>
+const SYMPTOMS = [
+  {
+    key:'nausees', label:'Nausées',
+    tips:[
+      "Manger de petites portions, plus fréquentes, plutôt que 3 gros repas.",
+      "Éviter les plats gras, frits ou très épicés, souvent les plus déclencheurs.",
+      "Manger lentement et s'arrêter dès la première sensation de satiété.",
+      "Jus d'ananas frais à jeun : parfois utilisé pour atténuer les nausées (technique aussi rapportée en contexte de chimiothérapie).",
+      "Privilégier les plats tièdes ou froids plutôt que chauds — les odeurs de plats chauds déclenchent souvent plus facilement les nausées.",
+      "Gingembre (infusion, bonbon, ou frais) : effet anti-nauséeux bien documenté.",
+      "Éviter de s'allonger juste après manger — rester assis 30 à 60 minutes.",
+      "Boire entre les repas plutôt que pendant, pour ne pas trop distendre l'estomac.",
+      "Si les nausées sont liées à l'injection, la faire le soir peut aider à mieux les traverser pendant le sommeil."
+    ],
+    redFlags:[
+      "Nausées empêchant de s'hydrater ou de manger depuis plus de 24h.",
+      "Perte de poids rapide et non recherchée en plus des nausées."
+    ]
+  },
+  {
+    key:'vomissements', label:'Vomissements',
+    tips:[
+      "Reprendre l'hydratation progressivement, par petites gorgées, dès que possible.",
+      "Privilégier une réhydratation avec un peu de sel et de sucre (bouillon, solution de réhydratation orale) plutôt que l'eau seule si les vomissements se répètent.",
+      "Reprendre l'alimentation doucement avec des aliments fades (riz, banane, compote, pain grillé).",
+      "Éviter de prendre la dose suivante d'injection avant d'en avoir parlé à ton médecin si les vomissements sont sévères ou répétés."
+    ],
+    redFlags:[
+      "Vomissements répétés depuis plus de 24h, ou impossibilité de garder les liquides.",
+      "Signes de déshydratation : bouche sèche, vertiges au lever, urines très foncées ou absentes.",
+      "Douleur abdominale intense associée, surtout irradiant vers le dos (à ne jamais ignorer sous GLP-1).",
+      "Vomissements avec sang ou ressemblant à du marc de café → urgence."
+    ]
+  },
+  {
+    key:'diarrhee', label:'Diarrhée',
+    tips:[
+      "Bien s'hydrater (eau, bouillons salés) pour compenser les pertes.",
+      "Réduire temporairement fibres insolubles, produits laitiers, plats gras ou très sucrés.",
+      "Privilégier riz, pâtes blanches, carottes cuites, banane, pommes de terre.",
+      "Réintroduire les fibres et aliments habituels progressivement une fois les selles normalisées."
+    ],
+    redFlags:[
+      "Diarrhée avec sang, fièvre, ou durant plus de 48-72h malgré ces mesures.",
+      "Signes de déshydratation (vertiges, bouche sèche, faiblesse marquée)."
+    ]
+  },
+  {
+    key:'constipation', label:'Constipation',
+    tips:[
+      "Augmenter progressivement les fibres (fruits, légumes, légumineuses, céréales complètes) — progressivement pour éviter les ballonnements.",
+      "Boire suffisamment d'eau dans la journée (souvent négligé quand l'appétit et la soif diminuent).",
+      "Bouger régulièrement : la marche stimule le transit.",
+      "Pruneaux, kiwis, eau riche en magnésium sont des leviers doux et efficaces.",
+      "Un transit régulier à heure fixe (souvent le matin après le petit-déjeuner) peut aider à réentraîner le réflexe."
+    ],
+    redFlags:[
+      "Constipation sévère de plus de 5-7 jours malgré ces mesures.",
+      "Douleurs abdominales importantes, ballonnement marqué, ou absence totale de gaz."
+    ]
+  },
+  {
+    key:'ventre', label:'Mal au ventre',
+    tips:[
+      "Repas plus petits et moins gras, mangés lentement.",
+      "Éviter de s'allonger immédiatement après le repas.",
+      "Une bouillotte tiède sur le ventre peut soulager une gêne digestive simple.",
+      "Noter si la douleur est liée à un repas particulier (souvent les repas gras ou copieux sous GLP-1)."
+    ],
+    redFlags:[
+      "Douleur intense, brutale, ou irradiant vers le dos ou l'épaule — évocatrice de pancréatite ou de calculs biliaires, deux risques connus sous GLP-1.",
+      "Douleur associée à fièvre, jaunisse, ou vomissements importants."
+    ]
+  },
+  {
+    key:'reflux', label:'Reflux / brûlures d\'estomac',
+    tips:[
+      "Éviter de s'allonger dans les 2-3h suivant un repas.",
+      "Surélever légèrement la tête du lit si les symptômes sont nocturnes.",
+      "Réduire les repas copieux, le café, l'alcool et les plats épicés ou très gras.",
+      "Fractionner les repas en portions plus petites."
+    ],
+    redFlags:[
+      "Douleur thoracique intense (à distinguer d'une cause cardiaque — consulter en urgence si doute).",
+      "Difficulté à avaler ou perte de poids associée inexpliquée."
+    ]
+  },
+  {
+    key:'ballonnements', label:'Ballonnements / gaz',
+    tips:[
+      "Manger lentement, éviter de parler en mangeant et les boissons gazeuses.",
+      "Repérer les aliments fermentescibles qui aggravent (choux, légumineuses en grande quantité, edulcorants en excès).",
+      "Marcher après le repas peut aider à évacuer les gaz plus facilement.",
+      "Tisane de fenouil, menthe poivrée ou charbon végétal en dépannage ponctuel."
+    ],
+    redFlags:[
+      "Ballonnement soudain et douloureux avec arrêt du transit."
+    ]
+  },
+  {
+    key:'fatigue', label:'Fatigue',
+    tips:[
+      "Vérifier que les apports caloriques et protéiques restent suffisants malgré la perte d'appétit — la fatigue est souvent liée à un déficit trop marqué.",
+      "Surveiller fer et vitamine B12, souvent en cause en cas de fatigue persistante sous perte de poids.",
+      "Prioriser le sommeil et répartir l'activité physique plutôt que la concentrer en une seule séance intense.",
+      "Fractionner les repas si de gros repas sont difficiles à terminer, pour maintenir un apport énergétique régulier."
+    ],
+    redFlags:[
+      "Fatigue intense, inhabituelle, associée à un essoufflement, des palpitations ou une pâleur marquée."
+    ]
+  },
+  {
+    key:'cheveux', label:'Chute de cheveux',
+    tips:[
+      "Souvent liée à une perte de poids rapide (effluvium télogène), en général temporaire et lié au rythme de la perte plus qu'au médicament lui-même.",
+      "Veiller à un apport suffisant en protéines, fer, zinc et vitamines B pendant la phase de perte de poids.",
+      "Éviter les tractions et traitements agressifs sur cheveux fragilisés pendant cette période.",
+      "Un bilan sanguin (fer, ferritine, thyroïde) permet d'écarter une autre cause si la chute est importante ou prolongée."
+    ],
+    redFlags:[
+      "Perte de cheveux très importante (plaques, masse capillaire réduite de moitié) ou qui ne s'améliore pas après plusieurs mois de poids stabilisé — à faire évaluer par un médecin ou dermatologue."
+    ]
+  },
+  {
+    key:'peau', label:'Peau sèche / déshydratation',
+    tips:[
+      "Augmenter l'hydratation générale, en particulier si l'appétit et la sensation de soif ont diminué.",
+      "Utiliser une crème hydratante émolliente quotidienne, sans parfum si la peau est sensibilisée.",
+      "Vérifier les apports en acides gras essentiels (oméga-3) et en zinc."
+    ],
+    redFlags:[
+      "Signes de déshydratation généralisée : vertiges, urines très concentrées, confusion."
+    ]
+  },
+  {
+    key:'vertiges', label:'Vertiges / étourdissements',
+    tips:[
+      "Se lever progressivement, surtout le matin ou après une position assise prolongée.",
+      "Vérifier l'hydratation et ne pas sauter de repas, surtout si l'appétit a beaucoup baissé.",
+      "Si tu es aussi sous traitement pour le diabète ou la tension, une hypoglycémie ou hypotension peut être en cause — un contrôle de la glycémie est utile en cas de doute."
+    ],
+    redFlags:[
+      "Vertiges avec perte de connaissance, confusion, ou associés à des palpitations.",
+      "Sous traitement du diabète ou de la tension en parallèle : ces vertiges doivent être signalés rapidement, un ajustement de dose peut être nécessaire."
+    ]
+  },
+  {
+    key:'sommeil', label:'Troubles du sommeil',
+    tips:[
+      "Éviter de prendre l'injection juste avant le coucher si des nausées nocturnes perturbent le sommeil — tester un autre moment de la journée.",
+      "Maintenir des horaires de sommeil réguliers et limiter les écrans en soirée.",
+      "Éviter la caféine l'après-midi, plus sensible pendant les phases de perte de poids rapide."
+    ],
+    redFlags:[
+      "Troubles du sommeil sévères et persistants impactant le fonctionnement quotidien — à mentionner à ton médecin."
+    ]
+  },
+  {
+    key:'maux_tete', label:'Maux de tête',
+    tips:[
+      "Boire davantage dans la journée — la déshydratation, favorisée par la baisse de l'appétit et de la soif, est une cause fréquente de maux de tête sous GLP-1.",
+      "Ajouter des électrolytes (solution de réhydratation, eau riche en minéraux, ou une pincée de sel + un peu de jus de citron) plutôt que de l'eau seule si le mal de tête persiste.",
+      "Vérifier que les repas ne sont pas trop espacés — une glycémie trop basse peut aussi déclencher des maux de tête.",
+      "Repos dans une pièce calme et peu éclairée en cas de crise."
+    ],
+    redFlags:[
+      "Mal de tête brutal et très intense, inhabituel ('le pire de ma vie') → urgence.",
+      "Associé à fièvre, raideur de la nuque, troubles de la vision ou confusion.",
+      "Maux de tête quotidiens ou de plus en plus fréquents malgré une bonne hydratation — à signaler à ton médecin."
+    ]
+  },
+  {
+    key:'articulations', label:'Douleurs articulaires post-injection',
+    tips:[
+      "Alterner les zones d'injection (ventre, cuisse, bras) pour éviter d'irriter toujours la même zone.",
+      "Vérifier la technique d'injection (angle, profondeur) avec ton pharmacien ou infirmier si la douleur est locale et systématique.",
+      "Appliquer une compresse froide sur le point d'injection en cas de gêne locale.",
+      "Une activité physique douce et régulière peut aider si la douleur touche plusieurs articulations (effet secondaire rapporté du traitement lui-même, indépendant du geste d'injection)."
+    ],
+    redFlags:[
+      "Douleur articulaire intense, avec gonflement, rougeur ou chaleur locale marquée.",
+      "Douleur qui s'aggrave dans le temps ou touche de plus en plus d'articulations."
+    ]
+  },
+  {
+    key:'langue', label:'Bout de la langue qui pique',
+    tips:[
+      "Souvent lié à une altération du goût (dysgueusie), un effet secondaire connu et généralement temporaire des GLP-1.",
+      "Éviter les aliments très acides, épicés ou très chauds tant que la sensation persiste.",
+      "Une bonne hydratation buccale peut atténuer la gêne."
+    ],
+    redFlags:[
+      "Picotement associé à un gonflement des lèvres, de la langue ou de la gorge, des difficultés à respirer ou à avaler → urgence, évoque une réaction allergique (angio-œdème). Ne pas attendre, appeler les secours."
+    ]
+  },
+  {
+    key:'rots', label:'Rots d\'œuf pourri (soufrés)',
+    tips:[
+      "Souvent déclenché par un repas trop gras ou trop copieux — la vidange gastrique déjà ralentie par le GLP-1 l'est encore plus quand le repas est riche en graisses.",
+      "Lié à la vidange gastrique ralentie, effet attendu des GLP-1, en général plus marqué en début de traitement ou après augmentation de dose.",
+      "Réduire temporairement les aliments riches en soufre (œufs, viande rouge, chou, brocoli, légumineuses).",
+      "Manger plus lentement et en plus petites quantités, en évitant les repas copieux.",
+      "S'améliore souvent avec le temps, au fur et à mesure que le corps s'adapte à la dose."
+    ],
+    redFlags:[
+      "Associé à des douleurs abdominales importantes, des vomissements répétés ou une distension abdominale marquée."
+    ]
+  },
+  {
+    key:'vue', label:'Problèmes de vue',
+    tips:[
+      "Une vision floue passagère peut être liée à des variations rapides de la glycémie plutôt qu'au médicament lui-même — un contrôle de la glycémie peut aider à situer la cause.",
+      "S'assurer d'une bonne hydratation générale."
+    ],
+    redFlags:[
+      "Tout trouble visuel nouveau chez une personne diabétique doit être signalé rapidement : une amélioration trop rapide de la glycémie peut aggraver transitoirement une rétinopathie diabétique préexistante — un contrôle ophtalmologique est recommandé, ne pas attendre pour en parler à ton médecin.",
+      "Perte de vision brutale, vision double, ou douleur oculaire → urgence ophtalmologique."
+    ]
+  },
+  {
+    key:'impossible_manger', label:'Impossibilité de manger',
+    tips:[
+      "Privilégier de très petites quantités mais nutritives et fréquentes plutôt que de forcer un repas complet : yaourt, compote, bouillon enrichi, boisson protéinée.",
+      "Prioriser les liquides et semi-liquides riches en protéines si le solide ne passe pas du tout.",
+      "En parler à ton médecin si cela dure : un ajustement de dose est souvent la solution la plus efficace, plus que les mesures alimentaires seules."
+    ],
+    redFlags:[
+      "Incapacité à manger ou boire depuis plus de 24-48h.",
+      "Perte de poids très rapide et importante, signes de dénutrition (fatigue extrême, vertiges, fonte musculaire visible) — à signaler sans tarder."
+    ]
+  }
+];
+
+const STORAGE_KEY = 'glp1-symptoms-v1';
+let checked = {};
+
+async function loadChecked(){
+  try{
+    const r = await window.storage.get(STORAGE_KEY);
+    if(r && r.value) checked = JSON.parse(r.value);
+  }catch(e){ /* rien de sauvegardé encore */ }
+}
+async function saveChecked(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(checked)); }catch(e){}
+}
+
+function renderGrid(){
+  const grid = document.getElementById('symptom-grid');
+  grid.innerHTML = '';
+  SYMPTOMS.forEach(sym=>{
+    const chip = document.createElement('div');
+    chip.className = 'symptom-chip'+(checked[sym.key] ? ' checked' : '');
+    chip.innerHTML = `<span class="dot"></span>${sym.label}`;
+    chip.addEventListener('click', ()=>{
+      checked[sym.key] = !checked[sym.key];
+      renderGrid(); renderDetails(); saveChecked();
+    });
+    grid.appendChild(chip);
+  });
+}
+
+function renderDetails(){
+  const container = document.getElementById('details-container');
+  container.innerHTML = '';
+  const active = SYMPTOMS.filter(s=>checked[s.key]);
+  if(active.length===0){
+    container.innerHTML = '<div class="empty-msg">Coche un ou plusieurs symptômes ci-dessus pour voir les conseils correspondants.</div>';
+    return;
+  }
+  active.forEach(sym=>{
+    const card = document.createElement('div');
+    card.className = 'detail-card';
+    card.innerHTML = `
+      <h3>${sym.label}</h3>
+      <h4>Que faire</h4>
+      <ul>${sym.tips.map(t=>`<li>${t}</li>`).join('')}</ul>
+      <div class="redflag-box">
+        <h4>Quand consulter</h4>
+        <ul>${sym.redFlags.map(t=>`<li>${t}</li>`).join('')}</ul>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+(async function init(){
+  await loadChecked();
+  renderGrid();
+  renderDetails();
+})();
+</script>
+</body>
+</html>
